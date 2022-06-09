@@ -5,6 +5,7 @@ import Idl from "./idl/myepicproject.json";
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { Program, Provider, web3 } from '@project-serum/anchor';
 import KP from "./key/keypair.json";
+require('dotenv').config();
 
 // 定数を宣言します。
 const TWITTER_HANDLE = 'HARUKI05758694';
@@ -20,7 +21,7 @@ const baseAccount = web3.Keypair.fromSecretKey(secret);
 // IDLファイルからプログラムIDを取得します。
 const programID = new PublicKey(Idl.metadata.address);
 // ネットワークをDevnetに設定します。
-const network = clusterApiUrl('devnet');
+const network = clusterApiUrl(process.env.SOLANA_NETWORK);
 // トランザクションが完了したときに通知方法を制御します。
 const opts = {
   preflightCommitment: "processed"
