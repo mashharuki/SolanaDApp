@@ -101,3 +101,6 @@ Your transaction signature vbd7Sw167XqpcWF9xTvdF5Pmj5HcrZHgic3k7vEfqhbmot5uG76oJ
 
 ### Solana Explorer
  <a href="https://explorer.solana.com/?cluster=devnet">https://explorer.solana.com/?cluster=devnet</a>
+
+### SOLSCAN
+ <a href="https://solscan.io/tx/di2AuX8jtu6uqhyy2AdS5tDuxwNyZhK6AUfdgCr2CY2Nu5cTVL79kx33KAVwxwZ9dpFLVJQjTKMftP9ehv5h8z4?cluster=devnet">https://solscan.io/tx/di2AuX8jtu6uqhyy2AdS5tDuxwNyZhK6AUfdgCr2CY2Nu5cTVL79kx33KAVwxwZ9dpFLVJQjTKMftP9ehv5h8z4?cluster=devnet</a>

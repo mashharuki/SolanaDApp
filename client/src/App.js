@@ -1,6 +1,9 @@
 import React, {useEffect, useState} from "react";
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css';
+import Idl from "./idl/myepicproject.json";
+import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Program, Provider, web3 } from '@project-serum/anchor';
 
 // 定数を宣言します。
 const TWITTER_HANDLE = 'HARUKI05758694';
@@ -12,6 +15,19 @@ const TEST_GIFS = [
   "https://media.giphy.com/media/ZNegC7wFpuQT7nurZ0/giphy.gif",
   "https://media.giphy.com/media/11JA9axStWivLUyhsB/giphy.gif"
 ];
+
+// SystemProgramはSolanaランタイムへの参照です。
+const { SystemProgram, Keypair } = web3;
+// GIFデータを保持するアカウントのキーペアを作成します。
+let baseAccount = Keypair.generate();
+// IDLファイルからプログラムIDを取得します。
+const programID = new PublicKey(Idl.metadata.address);
+// ネットワークをDevnetに設定します。
+const network = clusterApiUrl('devnet');
+// トランザクションが完了したときに通知方法を制御します。
+const opts = {
+  preflightCommitment: "processed"
+}
 
 /**
  * Appコンポーネント
@@ -79,31 +95,46 @@ const App = () => {
   /**
    * renderConnectedContainerコンポーネント
    */
-  const renderConnectedContainer = () => (
-    <div className="connected-container">
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          sendGif();
-        }}
-      >
-        <input 
-          type="text" 
-          placeholder="Enter gif link!" 
-          value={inputValue}
-          onChange={onInputChange}
-        />
-        <button type="submit" className="cta-button submit-gif-button">Submit</button>
-      </form>
-      <div className="gif-grid">
-        {gifList.map(gif => (
-          <div className="gif-item" key={gif}>
-            <img src={gif} alt={gif} />
+  const renderConnectedContainer = () => {
+    // アカウントが存在するか確認
+    if (gifList === null) {
+      return (
+        <div className="connected-container">
+          <button className="cta-button submit-gif-button" onClick={createGifAccount}>
+            Do One-Time Initialization For GIF Program Account
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="connected-container">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendGif();
+            }}
+          >
+            <input 
+              type="text" 
+              placeholder="Enter gif link!" 
+              value={inputValue}
+              onChange={onInputChange}
+            />
+            <button type="submit" className="cta-button submit-gif-button">
+              Submit
+            </button>
+          </form>
+          <div className="gif-grid">
+            {gifList.map((item, index) => (
+              <div className="gif-item" key={index}>
+                <img src={item.gifLink}/>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
-  );
+        </div>
+      );
+    }
+  };
 
   /**
    * 入力フォームの値が変化したときに呼び出すメソッド
@@ -126,6 +157,62 @@ const App = () => {
     }
   };
 
+  /**
+   * プロバイダー情報を取得するためのメソッド
+   */
+  const getProvider = () => {
+    const connection = new Connection(network, opts.preflightCommitment);
+    const provider = new Provider(
+      connection, window.solana, opts.preflightCommitment,
+    );
+    return provider;
+  }
+
+  /**
+   * GIFを格納するためのアカウントを作成するメソッド
+   */
+  const createGifAccount = async () => {
+    try {
+      const provider = getProvider();
+      const program = new Program(Idl, programID, provider);
+      console.log("ping");
+      // startStuffOffメソッドの呼び出し
+      await program.rpc.startStuffOff({
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [baseAccount]
+      });
+      console.log("Created a new BaseAccount w/ address:", baseAccount.publicKey.toString());
+      // GIFのリスト呼び出し
+      await getGifList();
+    } catch(error) {
+      console.log("Error creating BaseAccount account:", error)
+    }
+  }
+
+  /**
+   * GIFの情報を取得するためのメソッド
+   */
+  const getGifList = async() => {
+    try {
+      // プロバイダー情報を取得
+      const provider = getProvider();
+      const program = new Program(Idl, programID, provider);
+      // アカウントを取得する。
+      const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
+  
+      console.log("Got the account", account)
+      setGifList(account.gifList)
+  
+    } catch (error) {
+      console.log("Error in getGifList: ", error)
+      setGifList(null);
+    }
+  }
+
   // 副作用フック
   useEffect(() => {
     const onLoad = async () => {
@@ -138,11 +225,7 @@ const App = () => {
   useEffect(() => {
     if (walletAddress) {
       console.log('Fetching GIF list...');
-  
-      // Solana プログラムからのフェッチ処理をここに記述します。
-  
-      // TEST_GIFSをgifListに設定します。
-      setGifList(TEST_GIFS);
+      getGifList();
     }
   }, [walletAddress]);
 
