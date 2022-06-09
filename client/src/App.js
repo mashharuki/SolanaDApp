@@ -4,22 +4,19 @@ import './App.css';
 import Idl from "./idl/myepicproject.json";
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { Program, Provider, web3 } from '@project-serum/anchor';
+import KP from "./key/keypair.json";
 
 // 定数を宣言します。
 const TWITTER_HANDLE = 'HARUKI05758694';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 
-// GIFのURL情報を格納するための配列
-const TEST_GIFS = [
-  "https://media.giphy.com/media/QvBoMEcQ7DQXK/giphy.gif",
-  "https://media.giphy.com/media/ZNegC7wFpuQT7nurZ0/giphy.gif",
-  "https://media.giphy.com/media/11JA9axStWivLUyhsB/giphy.gif"
-];
-
 // SystemProgramはSolanaランタイムへの参照です。
 const { SystemProgram, Keypair } = web3;
 // GIFデータを保持するアカウントのキーペアを作成します。
-let baseAccount = Keypair.generate();
+const arr = Object.values(KP._keypair.secretKey);
+const secret = new Uint8Array(arr);
+// 秘密鍵からbaseaccount情報を取得
+const baseAccount = web3.Keypair.fromSecretKey(secret);
 // IDLファイルからプログラムIDを取得します。
 const programID = new PublicKey(Idl.metadata.address);
 // ネットワークをDevnetに設定します。
@@ -148,12 +145,29 @@ const App = () => {
    * GIFのURLデータをSolanaチェーンに送信するためのメソッド
    */
   const sendGif = async () => {
-    if (inputValue.length > 0) {
-      console.log('Gif link:', inputValue);
-      setGifList([...gifList, inputValue]);
-      setInputValue('');
-    } else {
-      console.log('Empty input. Try again.');
+    if (inputValue.length === 0) {
+      console.log("No gif link given!")
+      return
+    }
+    setInputValue('');
+    console.log('Gif link:', inputValue);
+
+    try {
+      // コントラクトの機能を使うための準備
+      const provider = getProvider();
+      const program = new Program(Idl, programID, provider);
+      // addGifメソッドを呼び出す
+      await program.rpc.addGif(inputValue, {
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+        },
+      });
+      console.log("GIF successfully sent to program", inputValue)
+      // GIFデータを取得する。
+      await getGifList();
+    } catch (error) {
+      console.log("Error sending GIF:", error)
     }
   };
 
