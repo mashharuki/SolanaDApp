@@ -19,6 +19,8 @@ const TEST_GIFS = [
 const App = () => {
   // ステート変数
   const [walletAddress, setWalletAddress] = useState(null);
+  const [inputValue, setInputValue] = useState('');
+  const [gifList, setGifList] = useState([]);
   
   /**
    * ウォレット接続状態を確認するためのメソッド
@@ -48,7 +50,7 @@ const App = () => {
   };
 
   /**
-   * 
+   * CONECCT WALLETボタンを押した時の処理
    */
   const connectWallet = async () => {
     const { solana } = window;
@@ -79,8 +81,22 @@ const App = () => {
    */
   const renderConnectedContainer = () => (
     <div className="connected-container">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          sendGif();
+        }}
+      >
+        <input 
+          type="text" 
+          placeholder="Enter gif link!" 
+          value={inputValue}
+          onChange={onInputChange}
+        />
+        <button type="submit" className="cta-button submit-gif-button">Submit</button>
+      </form>
       <div className="gif-grid">
-        {TEST_GIFS.map(gif => (
+        {gifList.map(gif => (
           <div className="gif-item" key={gif}>
             <img src={gif} alt={gif} />
           </div>
@@ -88,6 +104,27 @@ const App = () => {
       </div>
     </div>
   );
+
+  /**
+   * 入力フォームの値が変化したときに呼び出すメソッド
+   */
+  const onInputChange = (event) => {
+    const { value } = event.target;
+    setInputValue(value);
+  };
+
+  /**
+   * GIFのURLデータをSolanaチェーンに送信するためのメソッド
+   */
+  const sendGif = async () => {
+    if (inputValue.length > 0) {
+      console.log('Gif link:', inputValue);
+      setGifList([...gifList, inputValue]);
+      setInputValue('');
+    } else {
+      console.log('Empty input. Try again.');
+    }
+  };
 
   // 副作用フック
   useEffect(() => {
@@ -97,6 +134,17 @@ const App = () => {
     window.addEventListener('load', onLoad);
     return () => window.removeEventListener('load', onLoad);
   }, []);
+
+  useEffect(() => {
+    if (walletAddress) {
+      console.log('Fetching GIF list...');
+  
+      // Solana プログラムからのフェッチ処理をここに記述します。
+  
+      // TEST_GIFSをgifListに設定します。
+      setGifList(TEST_GIFS);
+    }
+  }, [walletAddress]);
 
   return (
     <div className="App">
